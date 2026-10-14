@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { memoryAdapter } from "better-auth/adapters/memory";
+import { memoryAdapter, type MemoryDB } from "better-auth/adapters/memory";
 import { nextCookies } from "better-auth/next-js";
 import { getDb, isNeonConfigured } from "@/server/db";
 
@@ -18,14 +18,20 @@ import { getDb, isNeonConfigured } from "@/server/db";
 
 const DEV_SECRET = "silo-breaker-dev-secret-change-me-in-production-0123456789";
 
+/**
+ * In-memory tables for the no-DATABASE_URL development mode. Exported so the
+ * background-engine API can resolve the workspace owner's user id.
+ */
+export const memoryDb: MemoryDB = {
+  user: [],
+  session: [],
+  account: [],
+  verification: [],
+};
+
 const database = isNeonConfigured()
   ? drizzleAdapter(getDb(), { provider: "pg" })
-  : memoryAdapter({
-      user: [],
-      session: [],
-      account: [],
-      verification: [],
-    });
+  : memoryAdapter(memoryDb);
 
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET ?? DEV_SECRET,

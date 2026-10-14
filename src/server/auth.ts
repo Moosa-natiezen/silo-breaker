@@ -19,15 +19,21 @@ import { getDb, isNeonConfigured } from "@/server/db";
 const DEV_SECRET = "silo-breaker-dev-secret-change-me-in-production-0123456789";
 
 /**
- * In-memory tables for the no-DATABASE_URL development mode. Exported so the
- * background-engine API can resolve the workspace owner's user id.
+ * In-memory tables for the no-DATABASE_URL development mode. Stored on
+ * globalThis so the Next.js route-handler bundle and the server-component
+ * bundle (separate module graphs in dev) share one store, and exported so
+ * the background-engine API can resolve the workspace owner's user id.
  */
-export const memoryDb: MemoryDB = {
+const globalStore = globalThis as typeof globalThis & {
+  __siloAuthMemoryDb?: MemoryDB;
+};
+
+export const memoryDb: MemoryDB = (globalStore.__siloAuthMemoryDb ??= {
   user: [],
   session: [],
   account: [],
   verification: [],
-};
+});
 
 const database = isNeonConfigured()
   ? drizzleAdapter(getDb(), { provider: "pg" })
@@ -52,6 +58,17 @@ export const auth = betterAuth({
   advanced: {
     useSecureCookies: process.env.NODE_ENV === "production",
   },
+  /**
+   * Origins allowed to talk to Better Auth. Includes the Cloud preview
+   * hostname so sign-in works from the preview URL, plus any extra origins
+   * provided via SILO_TRUSTED_ORIGINS (comma separated).
+   */
+  trustedOrigins: [
+    process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
+    "https://pv-76cbce1db81e-6c428e68-e986-44b9-a8f1-5cd790c61594.style.dev",
+    "https://*.style.dev",
+    ...(process.env.SILO_TRUSTED_ORIGINS?.split(",").map((o) => o.trim()) ?? []),
+  ],
   plugins: [nextCookies()],
 });
 

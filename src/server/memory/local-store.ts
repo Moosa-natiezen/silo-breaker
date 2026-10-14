@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, existsSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, existsSync, writeFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { cosineSimilarity } from "@/server/embeddings";
 import type {
@@ -26,6 +26,7 @@ export class LocalVectorStore implements MemoryStore {
   private chunks = new Map<string, MemoryChunk>();
   private insights = new Map<string, InsightRecord>();
   private loaded = false;
+  private mtime = -1;
 
   constructor(fileName = "local-memory.json") {
     const dir = join(process.cwd(), "data");
@@ -33,9 +34,30 @@ export class LocalVectorStore implements MemoryStore {
     this.file = join(dir, fileName);
   }
 
+  /**
+   * The Next.js server-component bundle and the route-handler bundle each
+   * instantiate this store, and the background engine writes from another
+   * module graph again — so re-read the file whenever its mtime changes.
+   * Without this, one instance could serve a stale (or empty) graph.
+   */
+  private ensureFresh() {
+    let mtime = 0;
+    try {
+      mtime = existsSync(this.file) ? statSync(this.file).mtimeMs : 0;
+    } catch {
+      mtime = 0;
+    }
+    if (!this.loaded || mtime !== this.mtime) {
+      this.load();
+      this.mtime = mtime;
+    }
+  }
+
   private load() {
-    if (this.loaded) return;
     this.loaded = true;
+    this.documents.clear();
+    this.chunks.clear();
+    this.insights.clear();
     if (!existsSync(this.file)) return;
     try {
       const raw = JSON.parse(readFileSync(this.file, "utf8")) as PersistedState;
@@ -54,29 +76,34 @@ export class LocalVectorStore implements MemoryStore {
       insights: [...this.insights.values()],
     };
     writeFileSync(this.file, JSON.stringify(state), "utf8");
+    try {
+      this.mtime = statSync(this.file).mtimeMs;
+    } catch {
+      this.mtime = -1;
+    }
   }
 
   async putDocument(doc: MemoryDocument): Promise<void> {
-    this.load();
+    this.ensureFresh();
     this.documents.set(doc.id, doc);
     this.flush();
   }
 
   async listDocuments(userId: string): Promise<MemoryDocument[]> {
-    this.load();
+    this.ensureFresh();
     return [...this.documents.values()]
       .filter((d) => d.userId === userId)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
   async getDocument(userId: string, id: string): Promise<MemoryDocument | null> {
-    this.load();
+    this.ensureFresh();
     const doc = this.documents.get(id);
     return doc && doc.userId === userId ? doc : null;
   }
 
   async putChunks(chunks: MemoryChunk[]): Promise<void> {
-    this.load();
+    this.ensureFresh();
     for (const chunk of chunks) this.chunks.set(chunk.id, chunk);
     this.flush();
   }
@@ -86,7 +113,7 @@ export class LocalVectorStore implements MemoryStore {
     embedding: number[],
     opts: { k?: number; excludeDocumentId?: string; minSimilarity?: number } = {},
   ): Promise<ChunkMatch[]> {
-    this.load();
+    this.ensureFresh();
     const { k = 8, excludeDocumentId, minSimilarity = -1 } = opts;
     const matches: ChunkMatch[] = [];
     for (const chunk of this.chunks.values()) {
@@ -99,7 +126,7 @@ export class LocalVectorStore implements MemoryStore {
   }
 
   async putInsight(insight: InsightRecord): Promise<void> {
-    this.load();
+    this.ensureFresh();
     this.insights.set(insight.id, insight);
     this.flush();
   }
@@ -108,7 +135,7 @@ export class LocalVectorStore implements MemoryStore {
     userId: string,
     opts: { status?: InsightRecord["status"]; limit?: number } = {},
   ): Promise<InsightRecord[]> {
-    this.load();
+    this.ensureFresh();
     const { status, limit = 50 } = opts;
     return [...this.insights.values()]
       .filter((i) => i.userId === userId && (!status || i.status === status))
@@ -121,7 +148,7 @@ export class LocalVectorStore implements MemoryStore {
     id: string,
     status: InsightRecord["status"],
   ): Promise<void> {
-    this.load();
+    this.ensureFresh();
     const insight = this.insights.get(id);
     if (!insight || insight.userId !== userId) return;
     this.insights.set(id, { ...insight, status });
@@ -129,7 +156,7 @@ export class LocalVectorStore implements MemoryStore {
   }
 
   async stats(userId: string): Promise<{ documents: number; chunks: number; insights: number }> {
-    this.load();
+    this.ensureFresh();
     const documents = [...this.documents.values()].filter((d) => d.userId === userId).length;
     const chunks = [...this.chunks.values()].filter((c) => c.userId === userId).length;
     const insights = [...this.insights.values()].filter((i) => i.userId === userId).length;

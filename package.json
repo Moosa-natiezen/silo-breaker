@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "migrate": "tsx scripts/migrate.ts",
-    "engine": "tsx scripts/watch-workspace.ts"
+    "engine": "tsx scripts/watch-workspace.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",
@@ -23,12 +24,15 @@
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
+    "jsdom": "^30.1.2",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5",

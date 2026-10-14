@@ -16,10 +16,14 @@ const SOURCE_LABEL: Record<DocumentPreview["source"], string> = {
   import: "Bulk import",
 };
 
+/** Session-start timestamp: keeps render pure while staying accurate enough
+ *  for a 8-week reading-rhythm chart. */
+const SESSION_NOW = Date.now();
+
 /** Weekly reading rhythm over the last 8 weeks. */
 function ReadingRhythm({ documents }: { documents: DocumentPreview[] }) {
   const buckets = useMemo(() => {
-    const now = Date.now();
+    const now = SESSION_NOW;
     const week = 7 * 24 * 60 * 60 * 1000;
     const out = new Array(8).fill(0);
     for (const doc of documents) {

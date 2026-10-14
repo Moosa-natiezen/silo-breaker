@@ -2,6 +2,7 @@ import { z } from "zod";
 import { requireUser } from "@/server/session";
 import { getMemoryStore } from "@/server/memory/store";
 import { deriveTitle, ingestDocument } from "@/server/ingest";
+import { runSynthesis } from "@/server/synthesis";
 
 /**
  * Documents API — the ingestion entry point.
@@ -100,7 +101,26 @@ export async function POST(request: Request) {
       source: source ?? (url && !content ? "url" : "manual"),
     });
 
-    return Response.json(result, { status: 201 });
+    // Flow 2: immediately cross-reference the new material against the
+    // user's entire history and raise Proactive Synthesis Alerts.
+    let synthesis: { created: number; topSimilarity: number } | null = null;
+    try {
+      const outcome = await runSynthesis({
+        userId: auth.user.id,
+        documentId: result.document.id,
+      });
+      synthesis = {
+        created: outcome.created.length,
+        topSimilarity: outcome.topSimilarity,
+      };
+    } catch (err) {
+      console.warn(
+        "[documents] synthesis skipped:",
+        err instanceof Error ? err.message : err,
+      );
+    }
+
+    return Response.json({ ...result, synthesis }, { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Ingestion failed";
     return Response.json({ error: message }, { status: 500 });

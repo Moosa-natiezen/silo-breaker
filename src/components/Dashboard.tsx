@@ -1,13 +1,14 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { signOut } from "@/lib/auth-client";
 import type { DocumentPreview, GraphStats, InsightView } from "@/lib/types";
 import AmbientHeader from "@/components/AmbientHeader";
 import CaptureDialog from "@/components/CaptureDialog";
 import KnowledgeCanvas from "@/components/KnowledgeCanvas";
 import OnboardingOverlay from "@/components/OnboardingOverlay";
+import SynthesisIntercom from "@/components/SynthesisIntercom";
 
 interface Props {
   user: { name: string; email: string };
@@ -40,13 +41,11 @@ function DashboardInner({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [captureOpen, setCaptureOpen] = useState(false);
-  const [onboarding, setOnboarding] = useState(false);
-  const [documents] = useState(initialDocuments);
-  const [insights, setInsights] = useState(initialInsights);
-
-  useEffect(() => {
-    if (searchParams.get("onboard") === "1") setOnboarding(true);
-  }, [searchParams]);
+  const [onboarding, setOnboarding] = useState(
+    () => searchParams.get("onboard") === "1",
+  );
+  const documents = initialDocuments;
+  const insights = initialInsights;
 
   const pending = insights.filter((i) => i.status === "pending").length;
   const engineActive = pending > 0;
@@ -165,6 +164,12 @@ function DashboardInner({
         Silo Breaker · hyper-private personal AI · Nebius AI Cloud × NVIDIA Nemotron ×
         Neon Database × Better Auth
       </footer>
+
+      <SynthesisIntercom
+        insights={insights}
+        documents={documents}
+        onChanged={() => router.refresh()}
+      />
 
       {captureOpen && (
         <CaptureDialog

@@ -31,3 +31,4 @@
  GET /api/auth/get-session 200 in 24ms (next.js: 4ms, application-code: 20ms)
 2026-10-14T11:52:26.019Z WARN [Better Auth]: Invalid password
  POST /api/auth/sign-in/email 401 in 212ms (next.js: 1.0ms, application-code: 211ms)
+ GET /login 200 in 238ms (next.js: 67ms, application-code: 171ms)

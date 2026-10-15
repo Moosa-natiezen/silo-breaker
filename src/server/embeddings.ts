@@ -1,7 +1,8 @@
 /**
  * Embedding layer.
  *
- * Primary path: Nebius Token Factory embeddings API (BAAI/bge-en-icl, 1536 dims)
+ * Primary path: Nebius Token Factory embeddings API
+ * (Qwen/Qwen3-Embedding-8B requested at 1536 dims to match schema)
  *   POST https://api.tokenfactory.nebius.com/v1/embeddings
  *
  * Offline fallback: deterministic hashed bag-of-tokens embedding with the same
@@ -15,7 +16,7 @@ export const EMBEDDINGS_URL =
   process.env.NEBIUS_EMBEDDINGS_URL ??
   "https://api.tokenfactory.nebius.com/v1/embeddings";
 export const EMBEDDING_MODEL =
-  process.env.NEBIUS_EMBEDDING_MODEL ?? "BAAI/bge-en-icl";
+  process.env.NEBIUS_EMBEDDING_MODEL ?? "Qwen/Qwen3-Embedding-8B";
 
 type NebiusEmbeddingResponse = {
   data?: Array<{ index: number; embedding: number[] }>;
@@ -104,6 +105,9 @@ async function embedViaNebius(texts: string[]): Promise<number[][]> {
       model: EMBEDDING_MODEL,
       input: texts,
       encoding_format: "float",
+      // Qwen3-Embedding returns 4096 dims by default; our chunks.embedding
+      // column is vector(1536), so request the truncated projection.
+      dimensions: EMBEDDING_DIM,
     }),
   });
 

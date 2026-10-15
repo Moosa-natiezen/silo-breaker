@@ -25,8 +25,16 @@ async function main() {
     // The HTTP driver runs one statement per call — split the file safely.
     const statements = statement
       .split(";\n")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0 && !s.startsWith("--"));
+      // Strip full-line SQL comments so a section header (e.g. "-- Auth tables")
+      // doesn't cause the statement that follows it to be dropped.
+      .map((s) =>
+        s
+          .split("\n")
+          .filter((line) => !line.trim().startsWith("--"))
+          .join("\n")
+          .trim(),
+      )
+      .filter((s) => s.length > 0);
     for (const stmt of statements) {
       await sql`${sql.unsafe(stmt + ";")}`;
     }

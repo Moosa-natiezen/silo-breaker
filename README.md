@@ -63,7 +63,7 @@ entire graph strictly private to you.
 ```
 
 **Data flow:** capture/watch → sliding-window chunking → embedding
-(`BAAI/bge-en-icl`, 1536 dims) → vector store → cosine cross-reference against
+(`Qwen/Qwen3-Embedding-8B` at 1536 dims) → vector store → cosine cross-reference against
 everything read before → Nemotron articulates the insight → Proactive Synthesis
 Alert in the Intercom.
 

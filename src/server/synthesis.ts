@@ -64,7 +64,11 @@ async function articulateWithNemotron(args: {
       body: JSON.stringify({
         model: CHAT_MODEL,
         temperature: 0.4,
-        max_tokens: 220,
+        max_tokens: 500,
+        // Nemotron-3.5 emits a "thinking process" preamble by default, which
+        // pushes the JSON past max_tokens. Disable reasoning so it answers
+        // directly with the JSON payload.
+        reasoning_effort: "none",
         messages: [
           {
             role: "system",
@@ -88,9 +92,17 @@ async function articulateWithNemotron(args: {
 
     if (!res.ok) return null;
     const json = await res.json();
-    const raw = json?.choices?.[0]?.message?.content ?? "";
-    const match = String(raw).match(/\{[\s\S]*\}/);
-    if (!match) return null;
+    const raw = String(json?.choices?.[0]?.message?.content ?? "");
+    // Tolerate ```json fences around the payload.
+    const unfenced = raw.replace(/```(?:json)?/g, "").trim();
+    const match = unfenced.match(/\{[\s\S]*\}/);
+    if (!match) {
+      console.warn(
+        "[synthesis] Nemotron returned no JSON object, using template insight:",
+        raw.slice(0, 120),
+      );
+      return null;
+    }
     const parsed = JSON.parse(match[0]) as { headline?: string; body?: string };
     if (!parsed.headline || !parsed.body) return null;
     return { headline: parsed.headline.slice(0, 160), body: parsed.body.slice(0, 600) };

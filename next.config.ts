@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const PREVIEW_HOSTNAME =
-  "pv-76cbce1db81e-6c428e68-e986-44b9-a8f1-5cd790c61594.style.dev";
+  "pv-76cbce1db81e-804c445a-8fff-429e-bb7e-5a9eac12a94c.style.dev";
 
 const nextConfig: NextConfig = {
   /* config options here */

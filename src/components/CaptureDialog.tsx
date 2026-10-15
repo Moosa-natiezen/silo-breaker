@@ -118,7 +118,7 @@ export default function CaptureDialog({ onClose, onCaptured }: Props) {
         </button>
 
         <p className="mt-3 text-[11px] text-muted">
-          Content is chunked, embedded (Nebius <code className="text-accent">BAAI/bge-en-icl</code>)
+          Content is chunked, embedded (Nebius <code className="text-accent">Qwen/Qwen3-Embedding-8B</code>)
           and written to your private graph.
         </p>
       </form>

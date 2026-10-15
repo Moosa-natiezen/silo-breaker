@@ -14,7 +14,7 @@ import {
 /**
  * Drizzle schema for the Neon Postgres deployment target.
  * Includes Better Auth's tables plus the Silo Breaker knowledge-graph tables.
- * Vector embeddings use pgvector (1536 dims — matches Nebius BAAI/bge-en-icl).
+ * Vector embeddings use pgvector (1536 dims — matches Nebius Qwen/Qwen3-Embedding-8B).
  */
 
 // ---------------------------------------------------------------------------

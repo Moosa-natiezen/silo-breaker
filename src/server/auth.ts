@@ -65,7 +65,7 @@ export const auth = betterAuth({
    */
   trustedOrigins: [
     process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
-    "https://pv-76cbce1db81e-6c428e68-e986-44b9-a8f1-5cd790c61594.style.dev",
+    "https://pv-76cbce1db81e-804c445a-8fff-429e-bb7e-5a9eac12a94c.style.dev",
     "https://*.style.dev",
     ...(process.env.SILO_TRUSTED_ORIGINS?.split(",").map((o) => o.trim()) ?? []),
   ],
